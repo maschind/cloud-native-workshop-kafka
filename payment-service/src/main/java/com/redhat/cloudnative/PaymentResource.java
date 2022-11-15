@@ -87,14 +87,14 @@ public class PaymentResource {
         producer.send(new ProducerRecord<String, String>(paymentsTopic, payload.toString()));
     }
 
-    @Incoming("orders")
-    public CompletionStage<Void> onMessage(KafkaRecord<String, String> message)
-            throws IOException {
+    //@Incoming("orders")
+    //public CompletionStage<Void> onMessage(KafkaRecord<String, String> message)
+    //        throws IOException {
 
-        log.info("Kafka message with value = {} arrived", message.getPayload());
-        handleCloudEvent(message.getPayload());
-        return message.ack();
-    }
+    //    log.info("Kafka message with value = {} arrived", message.getPayload());
+    //    handleCloudEvent(message.getPayload());
+    //    return message.ack();
+    //}
 
     public void init(@Observes StartupEvent ev) {
         Properties props = new Properties();
