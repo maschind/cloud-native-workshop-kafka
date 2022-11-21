@@ -52,7 +52,7 @@ Add jdbc-postgresql plugin
 mvn quarkus:add-extension -Dextensions="jdbc-postgresql" -f inventory-service
 ```
 
-Deploy service: 
+Build and deploy inventory service: 
 
 ```
 mvn clean compile package -DskipTests -f inventory-service
@@ -67,7 +67,7 @@ oc annotate dc/inventory app.openshift.io/vcs-ref=ocp-4.9 --overwrite
 
 ## Build catalog service
 
-build catalog:
+Build and deploy catalog service: 
 ```
 mvn clean package spring-boot:repackage -DskipTests -f catalog-service
 ```
@@ -90,9 +90,10 @@ oc annotate dc/catalog app.openshift.io/vcs-ref=ocp-4.9 --overwrite
 
 ## Build cart service
 
-add openshift extension: 
+add extension: 
 ```
 mvn quarkus:add-extension -Dextensions="openshift" -f cart-service
+mvn quarkus:add-extension -Dextensions="messaging-kafka" -f cart-service
 ```
 
 Build and deploy cart service: 
@@ -108,28 +109,72 @@ oc annotate dc/cart app.openshift.io/connects-to=catalog,datagrid-service --over
 oc annotate dc/cart app.openshift.io/vcs-ref=ocp-4.9 --overwrite
 ```
 
+## Build order service
+
+add extension: 
+```
+mvn quarkus:add-extension -Dextensions="mongodb-panache,resteasy-reactive-jackson" -f order-service
+mvn quarkus:add-extension -Dextensions="messaging-kafka" -f order-service
+```
+
+Build and deploy order service: 
+
+```
+mvn clean package -DskipTests -f order-service && oc rollout status -w dc/order
+```
+Add labels:
+```
+oc label dc/order app.kubernetes.io/part-of=order --overwrite && \
+oc label dc/order-database app.kubernetes.io/part-of=order app.openshift.io/runtime=mongodb --overwrite && \
+oc annotate dc/order app.openshift.io/connects-to=order-database --overwrite && \
+oc annotate dc/order app.openshift.io/vcs-ref=ocp-4.9 --overwrite
+```
+
+```
+mvn quarkus:add-extension -Dextensions="messaging-kafka" -f order-service
+```
+## Build Web-UI service
+
+add extension: 
+```
+cd coolstore-ui && npm install --save-dev nodeshift
+```
+
+Build and deploy web-ui service: 
+
+```
+npm run nodeshift && oc expose svc/coolstore-ui && \
+oc label dc/coolstore-ui app.kubernetes.io/part-of=coolstore --overwrite && \
+oc annotate dc/coolstore-ui app.openshift.io/connects-to=order-cart,catalog,inventory,order --overwrite && \
+oc annotate dc/coolstore-ui app.openshift.io/vcs-uri=https://github.com/maschind/cloud-native-workshop-kafka.git --overwrite && \
+oc annotate dc/coolstore-ui app.openshift.io/vcs-ref=ocp-4.9 --overwrite
+cd ..
+```
+
+## Build payment service
+
+add extension: 
+```
+mvn quarkus:add-extension -Dextensions="messaging-kafka" -f payment-service
+```
+
+Build and deploy payment service: 
+
+```
+mvn clean package -DskipTests -f payment-service && oc rollout status -w dc/payment
+```
+Add labels:
+```
+oc label dc/payment app.kubernetes.io/part-of=payment --overwrite && \
+oc annotate dc/payment app.openshift.io/connects-to=my-cluster --overwrite && \
+oc annotate dc/payment app.openshift.io/vcs-ref=ocp-4.9 --overwrite
+```
+
+
+
 ---
 
 # Credits
 This cloud native workshop is based on CCN Roadshow (Dev Track) https://github.com/RedHat-Middleware-Workshops/cloud-native-workshop-v2m4-labs
 
 
-
-
-oc new-app \
-    --name=inventory-database \
-    -e POSTGRESQL_USER=inventory \
-    -e POSTGRESQL_PASSWORD=mysecretpassword \
-    -e POSTGRESQL_DATABASE=inventory \
-    registry.redhat.io/rhel8/postgresql-10
-
-oc new-app \
-    --name=catalog-database \
-    -e POSTGRESQL_USER=catalog \
-    -e POSTGRESQL_PASSWORD=mysecretpassword \
-    -e POSTGRESQL_DATABASE=catalog \
-    registry.redhat.io/rhel8/postgresql-10
-
-oc new-app --as-deployment-config quay.io/openshiftlabs/ccn-infinispan:12.0.0.Final-1 --name=datagrid-service -e USER=user -e PASS=pass
-
-oc new-app --as-deployment-config --docker-image quay.io/openshiftlabs/ccn-mongo:4.0 --name=order-database
