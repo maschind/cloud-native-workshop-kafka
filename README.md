@@ -21,6 +21,7 @@ The included Java projects and/or installation files are here:
 2. Install Serverless Operator 
 1. 
 3. make sure oc cli and maven is installed
+4. oc new-project cloudnativeapps
 
 ## Build inventory service
 
@@ -35,7 +36,7 @@ sdsd
 
 Deploy service: 
 ```
-oc project opentlc-mgr-cloudnativeapps && \
+oc project cloudnativeapps && \
 mvn clean compile package -DskipTests -f inventory-service
 ```
 Add labels:
