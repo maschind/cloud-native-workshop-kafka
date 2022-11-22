@@ -15,17 +15,23 @@ The included Java projects and/or installation files are here:
 * User Service - Vert.x service running on JDK for managing users
 * Payment Service  - A Quarkus based FaaS with Knative 
 
+![Target Scenario](/images/lab3-goal.png)
+
 # Installation 
 
 1. Get a cluster: OCP 4.10 (or greater)
-2. Install Serverless Operator 
-1. 
-3. make sure oc cli and maven is installed
-4. oc new-project cloudnativeapps
+2. Install Serverless 1.25 Operator 
+3. Install AMQ Streams 2.2 Operator
+4. make sure oc cli and maven is installed
+5. Add project _cloudnativeapps_: `oc new-project cloudnativeapps`
 
 ## Setup App Infra
 
+
 ```
+oc new-project cloudnativeapps
+oc project cloudnativeapps
+
 oc new-app \
     --name=inventory-database \
     -e POSTGRESQL_USER=inventory \
@@ -43,6 +49,13 @@ oc new-app \
 oc new-app --as-deployment-config quay.io/openshiftlabs/ccn-infinispan:12.0.0.Final-1 --name=datagrid-service -e USER=user -e PASS=pass
 
 oc new-app --as-deployment-config --docker-image quay.io/openshiftlabs/ccn-mongo:4.0 --name=order-database
+
+oc apply -f resources/Kafka.yaml
+oc apply -f resources/KafkaTopic.yaml
+
+oc apply -f resources/KnativeEventing.yaml 
+oc apply -f resources/KnativeServing.yaml
+oc apply -f resources/KnativeKafka.yaml 
 ```
 
 ## Build inventory service
@@ -130,9 +143,7 @@ oc annotate dc/order app.openshift.io/connects-to=order-database --overwrite && 
 oc annotate dc/order app.openshift.io/vcs-ref=ocp-4.9 --overwrite
 ```
 
-```
-mvn quarkus:add-extension -Dextensions="messaging-kafka" -f order-service
-```
+
 ## Build Web-UI service
 
 add extension: 
@@ -161,7 +172,7 @@ mvn quarkus:add-extension -Dextensions="messaging-kafka" -f payment-service
 Build and deploy payment service: 
 
 ```
-mvn clean package -DskipTests -f payment-service && oc rollout status -w dc/payment
+mvn clean package -Pnative -DskipTests -Dnative-image.docker-build=true  -Dquarkus.native.native-image-xmx=2g -f payment-service && oc rollout status -w dc/payment
 ```
 Add labels:
 ```
@@ -170,6 +181,9 @@ oc annotate dc/payment app.openshift.io/connects-to=my-cluster --overwrite && \
 oc annotate dc/payment app.openshift.io/vcs-ref=ocp-4.9 --overwrite
 ```
 
+```
+oc apply -f resources/KafkaSource.yaml
+```
 
 
 ---

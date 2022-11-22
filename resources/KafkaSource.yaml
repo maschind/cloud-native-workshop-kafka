@@ -5,7 +5,7 @@ metadata:
 spec:
   consumerGroup: knative-group
   bootstrapServers:
-  - my-cluster-kafka-bootstrap.opentlc-mgr-cloudnativeapps:9092
+  - my-cluster-kafka-bootstrap.cloudnativeapps:9092
   topics:
   - orders
   sink:

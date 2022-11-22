@@ -18,7 +18,6 @@ items:
     labels:
       strimzi.io/cluster: my-cluster
     name: payments
-    namespace: che1sdm-serverless
   spec:
     config:
       retention.ms: 604800000
