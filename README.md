@@ -18,20 +18,33 @@ The included Java projects and/or installation files are here:
 ![Target Scenario](/images/lab3-goal.png)
 
 # Installation 
-
-1. Get a cluster: OCP 4.10 (or greater)
+Couple of Red Hat tech needs to be installed: 
+1. Get a OpenShift cluster v4.10 (or greater)
 2. Install Serverless 1.25 Operator 
 3. Install AMQ Streams 2.2 Operator
-4. make sure oc cli and maven is installed
-5. Add project _cloudnativeapps_: `oc new-project cloudnativeapps`
+4. Make sure oc cli and maven, jdk11, mandrel is installed
+5. Add project/namespace _cloudnativeapps_
 
 ## Setup App Infra
 
+---
+**_INFO_** 
+Some sources are configured to make use of namespace cloudnativeapps. If you choose for another name please modify the sources. 
 
+```
+sed ... 
+```
+
+---
+
+Setup a new project/namespace
 ```
 oc new-project cloudnativeapps
 oc project cloudnativeapps
+```
 
+Deploy some needed databases, cache and Kafka
+```
 oc new-app \
     --name=inventory-database \
     -e POSTGRESQL_USER=inventory \
@@ -60,11 +73,6 @@ oc apply -f resources/KnativeKafka.yaml
 
 ## Build inventory service
 
-Add jdbc-postgresql plugin
-```
-mvn quarkus:add-extension -Dextensions="jdbc-postgresql" -f inventory-service
-```
-
 Build and deploy inventory service: 
 
 ```
@@ -76,6 +84,11 @@ oc label dc/inventory app.kubernetes.io/part-of=inventory --overwrite && \
 oc label deployment/inventory-database app.kubernetes.io/part-of=inventory app.openshift.io/runtime=postgresql --overwrite && \
 oc annotate dc/inventory app.openshift.io/connects-to=inventory-database --overwrite && \
 oc annotate dc/inventory app.openshift.io/vcs-ref=ocp-4.9 --overwrite
+```
+
+Add network policies (in case of deny default)
+```
+oc apply -f resources/....
 ```
 
 ## Build catalog service
@@ -103,12 +116,6 @@ oc annotate dc/catalog app.openshift.io/vcs-ref=ocp-4.9 --overwrite
 
 ## Build cart service
 
-add extension: 
-```
-mvn quarkus:add-extension -Dextensions="openshift" -f cart-service
-mvn quarkus:add-extension -Dextensions="messaging-kafka" -f cart-service
-```
-
 Build and deploy cart service: 
 
 ```
@@ -123,12 +130,6 @@ oc annotate dc/cart app.openshift.io/vcs-ref=ocp-4.9 --overwrite
 ```
 
 ## Build order service
-
-add extension: 
-```
-mvn quarkus:add-extension -Dextensions="mongodb-panache,resteasy-reactive-jackson" -f order-service
-mvn quarkus:add-extension -Dextensions="messaging-kafka" -f order-service
-```
 
 Build and deploy order service: 
 
@@ -146,11 +147,6 @@ oc annotate dc/order app.openshift.io/vcs-ref=ocp-4.9 --overwrite
 
 ## Build Web-UI service
 
-add extension: 
-```
-cd coolstore-ui && npm install --save-dev nodeshift
-```
-
 Build and deploy web-ui service: 
 
 ```
@@ -164,11 +160,6 @@ cd ..
 
 ## Build payment service
 
-add extension: 
-```
-mvn quarkus:add-extension -Dextensions="messaging-kafka" -f payment-service
-```
-
 Build and deploy payment service: 
 
 ```
@@ -176,9 +167,7 @@ mvn clean package -Pnative -DskipTests -Dnative-image.docker-build=true  -Dquark
 ```
 Add labels:
 ```
-oc label dc/payment app.kubernetes.io/part-of=payment --overwrite && \
-oc annotate dc/payment app.openshift.io/connects-to=my-cluster --overwrite && \
-oc annotate dc/payment app.openshift.io/vcs-ref=ocp-4.9 --overwrite
+oc label Revision/payment-00001 app.openshift.io/runtime=quarkus --overwrite
 ```
 
 ```
